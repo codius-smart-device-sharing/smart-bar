@@ -1,1 +1,1 @@
-# smart-bar
+# Microncontroller Code for Automated Smart Bar
