@@ -1,2 +1,2 @@
-int dir = 2;
-int step = 3;
+int mix_dir = 2;
+int mix_step = 3;
