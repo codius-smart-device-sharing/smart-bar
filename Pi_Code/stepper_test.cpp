@@ -5,10 +5,10 @@
 #include <queue>
 using namespace std;
 
-int a1 = 26;
-int a2 = 19;
-int a3 = 13;
-int a4 = 6;
+int a1 = 25;
+int a2 = 24;
+int a3 = 23;
+int a4 = 22;
 
 void step(vector<bool> sequence)
 {
