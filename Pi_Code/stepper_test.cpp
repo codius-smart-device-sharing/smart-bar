@@ -67,14 +67,14 @@ int main()
 {
 	queue<vector<bool>> sequences;
 	
-	sequences.push(vector<bool> {true, false, false, false})
-	sequences.push(vector<bool> {true, true, false, false})
-	sequences.push(vector<bool> {false, true, false, false})
-	sequences.push(vector<bool> {false, true, true, false})
-	sequences.push(vector<bool> {false, false, true, false})
-	sequences.push(vector<bool> {false, false, true, true})
-	sequences.push(vector<bool> {false, false, false, true})
-	sequences.push(vector<bool> {true, false, false, true})
+	sequences.push(vector<bool> {true, false, false, false});
+	sequences.push(vector<bool> {true, true, false, false});
+	sequences.push(vector<bool> {false, true, false, false});
+	sequences.push(vector<bool> {false, true, true, false});
+	sequences.push(vector<bool> {false, false, true, false});
+	sequences.push(vector<bool> {false, false, true, true});
+	sequences.push(vector<bool> {false, false, false, true});
+	sequences.push(vector<bool> {true, false, false, true});
 
 	pinMode(a1, OUTPUT);
 	pinMode(a2, OUTPUT);
