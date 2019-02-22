@@ -49,8 +49,9 @@ void step(vector<bool> sequence)
 	}
 }
 
-void forward(queue<vector<bool>> sequences, int rotations)
+void forward(queue<vector<bool> > sequences, int rotations)
 {
+	vector<bool> sequence;
 	for (int i = 0; i < rotations; i++)
 	{
 		for (int j = 0; j < 8; j++)
@@ -65,7 +66,7 @@ void forward(queue<vector<bool>> sequences, int rotations)
 
 int main() 
 {
-	queue<vector<bool>> sequences;
+	queue<vector<bool> > sequences;
 	
 	sequences.push(vector<bool> {true, false, false, false});
 	sequences.push(vector<bool> {true, true, false, false});
