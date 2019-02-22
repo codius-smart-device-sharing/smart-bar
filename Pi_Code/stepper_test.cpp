@@ -66,6 +66,7 @@ void forward(queue<vector<bool> > sequences, int rotations)
 
 int main() 
 {
+	wiringPiSetup();
 	queue<vector<bool> > sequences;
 	
 	sequences.push(vector<bool> {true, false, false, false});
