@@ -60,6 +60,7 @@ void forward(queue<vector<bool> > sequences, int rotations)
 			sequences.pop();
 			sequences.push(sequence);
 			step(sequence);
+			delay(1);
 		}
 	}
 }
