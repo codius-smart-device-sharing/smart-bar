@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <wiringPi.h>
-#include "mix_pumps.h"
+int mix_dir = 2;
+int mix_step = 3;
 
 void setup()
 {
