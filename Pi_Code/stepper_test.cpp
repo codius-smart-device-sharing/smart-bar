@@ -77,6 +77,11 @@ void forward_5v(queue<vector<bool> > sequences, int rotations, stepper_5v steppe
 			delay(1);
 		}
 	}
+
+	digitalWrite(stepper.a1, LOW);
+	digitalWrite(stepper.a2, LOW);
+	digitalWrite(stepper.a3, LOW);
+	digitalWrite(stepper.a4, LOW);
 }
 
 int main() 
