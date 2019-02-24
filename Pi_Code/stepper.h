@@ -8,13 +8,13 @@
 #include <string>
 
 struct stepper {
-    string name;
+    std::string name;
     int dir;
     int step;
 };
 
 struct stepper_5v {
-    string name;
+    std::string name;
     int a1;
     int a2;
     int a3;
