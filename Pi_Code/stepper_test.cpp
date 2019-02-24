@@ -6,8 +6,8 @@ using namespace std;
 // stepper y;
 stepper_5v clamp;
 // stepper_5v eject;
-void step(vector<bool> sequence);
-void forward(queue<vector<bool> > sequences, int rotations);
+void step_5v(vector<bool> sequence, stepper_5v stepper);
+void forward_5v(queue<vector<bool> > sequences, int rotations, stepper_5v stepper);
 void setup();
 
 void setup()
@@ -21,7 +21,7 @@ void setup()
 	pinMode(clamp.a1, OUTPUT);
 	pinMode(clamp.a2, OUTPUT);
 	pinMode(clamp.a3, OUTPUT);
-	pinMode(clmap.a4, OUTPUT);
+	pinMode(clamp.a4, OUTPUT);
 }
 
 void step_5v(vector<bool> sequence, stepper_5v stepper)
