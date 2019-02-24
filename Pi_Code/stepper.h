@@ -5,6 +5,7 @@
 #include "wiringPi.h"
 #include <queue>
 #include <vector>
+#include <string>
 
 struct stepper {
     string name;
