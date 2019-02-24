@@ -1,8 +1,4 @@
-#include <stdio.h>
-#include <stdlib.h>
-#include <wiringPi.h>
-#include <vector>
-#include <queue>
+#include "stepper.h"
 using namespace std;
 
 int a1 = 25;
