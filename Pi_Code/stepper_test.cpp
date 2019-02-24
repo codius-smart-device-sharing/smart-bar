@@ -13,6 +13,7 @@ void setup();
 void setup()
 {
 	wiringPiSetup();
+
 	clamp.name = "Clamp Motor";
 	clamp.a1 = 25;
 	clamp.a2 = 24;
@@ -22,6 +23,24 @@ void setup()
 	pinMode(clamp.a2, OUTPUT);
 	pinMode(clamp.a3, OUTPUT);
 	pinMode(clamp.a4, OUTPUT);
+
+	// eject.name = "Ejector Motor";
+	// eject.a1 = ;
+	// eject.a2 = ;
+	// eject.a3 = ;
+	// eject.a4 = ;
+	// pinMode(eject.a1, OUTPUT);
+	// pinMode(eject.a2, OUTPUT);
+	// pinMode(eject.a3, OUTPUT);
+	// pinMode(eject.a4, OUTPUT);
+
+	// pump.name = "Pump Motor";
+	// pump.dir = ;
+	// pump.step = ;
+	// pinMode(pump.dir, OUTPUT);
+	// pinMode(pump.step, OUTPUT);
+
+
 }
 
 void step_5v(vector<bool> sequence, stepper_5v stepper)

@@ -17,7 +17,7 @@ void setup()
 	pinMode(mix_step, OUTPUT);
 
 	digitalWrite(mix_dir, LOW);
-	digitalWrite(mix_step, HIGH);
+	digitalWrite(mix_step, LOW);
 }
 
 void run()
@@ -29,9 +29,9 @@ void run()
 		for(i = 1; i <= 50; i++)
 		{
 			digitalWrite(mix_step, HIGH);
-			delayMicroseconds(500);
+			delayMicroseconds(2000);
 			digitalWrite(mix_step, LOW);
-			delayMicroseconds(500);
+			delayMicroseconds(2000);
 		}
 	}	
 }
