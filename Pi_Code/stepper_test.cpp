@@ -26,7 +26,6 @@ void setup()
 
 void step_5v(vector<bool> sequence, stepper_5v stepper)
 {
-	printf("Stepping %s...\n", stepper.name);
 	if (sequence[0])
 	{
 		digitalWrite(stepper.a1, HIGH);
@@ -74,7 +73,7 @@ void forward_5v(queue<vector<bool> > sequences, int rotations, stepper_5v steppe
 			sequence = sequences.front();
 			sequences.pop();
 			sequences.push(sequence);
-			step(sequence, stepper);
+			step_5v(sequence, stepper);
 			delay(1);
 		}
 	}
@@ -94,7 +93,7 @@ int main()
 	sequences.push(vector<bool> {false, false, false, true});
 	sequences.push(vector<bool> {true, false, false, true});
 
-	forward(sequences, 10000, clamp);
+	forward_5v(sequences, 10000, clamp);
 
 	return 0;
 }
