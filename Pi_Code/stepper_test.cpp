@@ -86,7 +86,7 @@ int main()
 	pinMode(a3, OUTPUT);
 	pinMode(a4, OUTPUT);
 
-	forward(sequences, 100);
+	forward(sequences, 10000);
 
 	return 0;
 }
