@@ -29,9 +29,9 @@ void run()
 		for(i = 1; i <= 50; i++)
 		{
 			digitalWrite(mix_step, HIGH);
-			delayMicroseconds(2000);
+			delayMicroseconds(500);
 			digitalWrite(mix_step, LOW);
-			delayMicroseconds(2000);
+			delayMicroseconds(500);
 		}
 	}	
 }
