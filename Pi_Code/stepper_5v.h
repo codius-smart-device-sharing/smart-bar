@@ -18,8 +18,8 @@ class Stepper_5v
         queue<vector<bool> > forward_sequence;
         queue<vector<bool> > backward_sequence;
         setup();
-        step(Stepper_5v& stepper, std::vector<bool> sequence);
+        step(std::vector<bool> sequence);
     public:
         Stepper_5v(std::string name, int a1, int a2, int a3, int a4);
-        move(Stepper_5v& stepper, int direction);
+        move(int direction);
 }
