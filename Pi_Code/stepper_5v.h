@@ -17,9 +17,9 @@ class Stepper_5v
         int a4;
         queue<vector<bool> > forward_sequence;
         queue<vector<bool> > backward_sequence;
-        setup();
-        step(std::vector<bool> sequence);
+        void setup();
+        void step(std::vector<bool> sequence);
     public:
         Stepper_5v(std::string name, int a1, int a2, int a3, int a4);
-        move(int direction);
+        void move(int direction);
 }

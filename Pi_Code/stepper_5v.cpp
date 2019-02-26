@@ -23,7 +23,7 @@ void Stepper_5v::setup()
     digitalWrite(this->a4, LOW);
 }
 
-Stepper_5v::step(vector<bool> sequence)
+void Stepper_5v::step(vector<bool> sequence)
 {
     if (sequence[0])
 	{
@@ -62,7 +62,7 @@ Stepper_5v::step(vector<bool> sequence)
 	}
 }
 
-Stepper_5v::move(int direction)
+void Stepper_5v::move(int direction)
 {
 	vector<bool> sequence;
     if (direction)
