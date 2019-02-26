@@ -74,7 +74,7 @@ Stepper_5v::move(Stepper_5v& stepper, int direction)
                 sequence = this->forward_sequence.front();
                 this->forward_sequence.pop();
                 this->forward_sequence.push(sequence);
-                step(stepper, sequence);
+                this->step(stepper, sequence);
                 delay(1);
             }
         }
