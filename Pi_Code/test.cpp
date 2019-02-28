@@ -22,18 +22,15 @@ void setup()
 
 void run()
 {
-	int i = 0;
+//	int i = 0;
 	digitalWrite(mix_dir, HIGH);
 	while(true)
 	{
-		for(i = 1; i <= 50; i++)
-		{
-			digitalWrite(mix_step, HIGH);
-			delayMicroseconds(2000);
-			digitalWrite(mix_step, LOW);
-			delayMicroseconds(2000);
-		}
-	}	
+		digitalWrite(mix_step, HIGH);
+		delayMicroseconds(75);
+		digitalWrite(mix_step, LOW);
+		delayMicroseconds(75);
+	}
 }
 
 int main(void)

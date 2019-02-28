@@ -1,4 +1,4 @@
-#include "stepper.h"
+#include "Stepper.h"
 using namespace std;
 
 void Stepper::setup()
@@ -10,15 +10,7 @@ void Stepper::setup()
     digitalWrite(this->step_pin, LOW);
 }
 
-void Stepper::step()
-{
-    digitalWrite(this->step_pin, HIGH);
-    delayMicroseconds(2000);
-    digitalWrite(this->step_pin, LOW);
-    delayMicroseconds(2000);
-}
-
-void Stepper::move(int direciton)
+void Stepper::move(int direction, int rotations)
 {
     if (direction)
     {
@@ -29,9 +21,12 @@ void Stepper::move(int direciton)
         digitalWrite(this->dir_pin, LOW);
     }
 
-    for (int i = 0; i < 50; i++)
+    for(int i = 0; i < rotations; i++)
     {
-        this->step();
+        digitalWrite(this->step_pin, HIGH);
+        delayMicroseconds(80);
+        digitalWrite(this->step_pin, LOW);
+        delayMicroseconds(80);
     }
 }
 

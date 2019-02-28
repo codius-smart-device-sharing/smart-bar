@@ -1,7 +1,15 @@
-#include "stepper_5v.h"
+#include "Stepper_5v.h"
 using namespace std;
 
-void Stepper_5v::setup()
+void Stepper_5v::setPins_5v()
+{
+	digitalWrite(this->a1, HIGH);
+	digitalWrite(this->a2, HIGH);
+	digitalWrite(this->a3, HIGH);
+	digitalWrite(this->a4, HIGH);
+}
+
+void Stepper_5v::setup_5v()
 {
     this->forward_sequence.push(vector<bool> {true, false, false, false});
 	this->forward_sequence.push(vector<bool> {true, true, false, false});
@@ -11,6 +19,15 @@ void Stepper_5v::setup()
 	this->forward_sequence.push(vector<bool> {false, false, true, true});
 	this->forward_sequence.push(vector<bool> {false, false, false, true});
 	this->forward_sequence.push(vector<bool> {true, false, false, true});
+
+	this->backward_sequence.push(vector<bool> {false, false, false, true});
+	this->backward_sequence.push(vector<bool> {false, false, true, true});
+	this->backward_sequence.push(vector<bool> {false, false, true, false});
+	this->backward_sequence.push(vector<bool> {false, true, true, false});
+	this->backward_sequence.push(vector<bool> {false, true, false, false});
+	this->backward_sequence.push(vector<bool> {true, true, false, false});
+	this->backward_sequence.push(vector<bool> {true, false, false, false});
+	this->backward_sequence.push(vector<bool> {true, false, false, true});
 
     pinMode(this->a1, OUTPUT);
     pinMode(this->a2, OUTPUT);
@@ -23,7 +40,7 @@ void Stepper_5v::setup()
     digitalWrite(this->a4, LOW);
 }
 
-void Stepper_5v::step(vector<bool> sequence)
+void Stepper_5v::step_5v(vector<bool> sequence)
 {
     if (sequence[0])
 	{
@@ -42,7 +59,7 @@ void Stepper_5v::step(vector<bool> sequence)
 	{
 		digitalWrite(this->a2, LOW);
 	}	
-	
+
 	if (sequence[2])
 	{
 		digitalWrite(this->a3, HIGH);
@@ -62,7 +79,7 @@ void Stepper_5v::step(vector<bool> sequence)
 	}
 }
 
-void Stepper_5v::move(int direction)
+void Stepper_5v::move_5v(int direction, int rotations)
 {
 	vector<bool> sequence;
     if (direction)
@@ -74,7 +91,21 @@ void Stepper_5v::move(int direction)
                 sequence = this->forward_sequence.front();
                 this->forward_sequence.pop();
                 this->forward_sequence.push(sequence);
-                this->step(sequence);
+                this->step_5v(sequence);
+                delay(1);
+            }
+        }
+    }
+	else if (!direction)
+    {
+        for (int i = 0; i < rotations; i++)
+        {
+            for (int j = 0; j < 8; j++)
+            {
+                sequence = this->backward_sequence.front();
+                this->backward_sequence.pop();
+                this->backward_sequence.push(sequence);
+                this->step_5v(sequence);
                 delay(1);
             }
         }
@@ -93,5 +124,5 @@ Stepper_5v::Stepper_5v(string name, int a1, int a2, int a3, int a4)
     this->a2 = a2;
     this->a3 = a3;
     this->a4 = a4;
-    this->setup();
+    this->setup_5v();
 }

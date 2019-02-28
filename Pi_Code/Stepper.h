@@ -12,9 +12,8 @@ class Stepper {
         std::string name;
         int dir_pin;
         int step_pin;
-        void step();
         void setup();
     public:
         Stepper(std::string name, int dir_pin, int step_pin);
-        void move(int direction);
+        void move(int direction, int rotations);
 };
