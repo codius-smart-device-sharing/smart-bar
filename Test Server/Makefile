@@ -1,3 +1,3 @@
 all: test_server.cpp test_client.cpp
-	g++ test_server.cpp -o server -lcrypto -lssl -lpthread /usr/local/lib/libboost_thread.a
-	g++ test_client.cpp -o client -lcrypto -lssl -lpthread /usr/local/lib/libboost_thread.a
+	g++ src/test_server.cpp -o out/server -lcrypto -lssl -lpthread /usr/local/lib/libboost_thread.a
+	g++ src/test_client.cpp -o out/client -lcrypto -lssl -lpthread /usr/local/lib/libboost_thread.a
