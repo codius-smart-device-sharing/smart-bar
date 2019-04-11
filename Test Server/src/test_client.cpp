@@ -23,68 +23,85 @@ int main(int argc, char** argv)
     try
     {
         // Check command line arguments.
-        if(argc != 2)
+        if(argc != 3)
         {
             std::cerr <<
-                "Usage: ./client <target>\n" <<
+                "Usage: ./client <method> <target>\n" <<
                 "Example:\n" <<
-                "    ./client /\n" <<
-                "    ./client /cups\n" <<
-                "    ./client /quantity\n" <<
-                "    ./client /order\n";
+                "    ./client OPTIONS /\n" <<
+                "    ./client GET /cups\n" <<
+                "    ./client GET /quantity\n" <<
+                "    ./client GET /order\n";
             return EXIT_FAILURE;
 }
         auto const host = "127.0.0.1";
         auto const ip = net::ip::make_address_v4(host);
         auto const port = static_cast<unsigned short>(8080);
-        auto const target = argv[1];
+        std::string method(argv[1]);
+        std::string target(argv[2]);
         int version = 11;
 
         // The io_context is required for all I/O
         net::io_context ioc;
 
         // SSL Context
-        ssl::context ctx(ssl::context::tlsv12_client);
+        //ssl::context ctx(ssl::context::tlsv12_client);
 
         // This holds root cert used for verification
-        load_root_certificates(ctx);
+        //load_root_certificates(ctx);
 
 
         // Verify remote server's cert
-        ctx.set_verify_mode(ssl::verify_peer);
+        //ctx.set_verify_mode(ssl::verify_peer);
 
         // These objects perform our I/O
         tcp::resolver resolver(ioc);
-        ssl::stream<tcp::socket> stream(ioc, ctx);
+        //ssl::stream<tcp::socket> stream(ioc, ctx);
+        tcp::socket sock{ioc};
         tcp::endpoint endpoint_{ip, port};
 
         // Set SNI Hostname
-        if (!SSL_set_tlsext_host_name(stream.native_handle(), host))
-        {
-            beast::error_code ec{static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()};
-            throw beast::system_error{ec};
-        }
+        // if (!SSL_set_tlsext_host_name(stream.native_handle(), host))
+        // {
+        //     beast::error_code ec{static_cast<int>(::ERR_get_error()), net::error::get_ssl_category()};
+        //     throw beast::system_error{ec};
+        // }
         
         // Look up domain name
         auto const results = resolver.resolve(endpoint_);
 
         // Make the connection on the IP address
-        tcp::socket::lowest_layer_type& sock = stream.lowest_layer();
+        //tcp::socket::lowest_layer_type& sock = stream.lowest_layer();
         sock.connect(endpoint_);
 
         // SSl handshake
-        stream.handshake(ssl::stream_base::client);
+        //stream.handshake(ssl::stream_base::client);
 
-        // Set up an HTTP GET request message
+        // Set up an HTTP request message
         http::request<http::string_body> req;
         req.version(version);
-        req.method(http::verb::get);
+
+        if (method == "GET")
+        {
+            std::cout << "Sending GET request\n" << std::endl;
+            req.method(http::verb::get);
+        }
+        else if (method == "OPTIONS")
+        {
+            std::cout << "Sending OPTIONS request\n" << std::endl;
+            req.method(http::verb::options);
+        }
+        else
+        {
+            std::cout << "Something went wrong" << std::endl;
+        }
+        
         req.target(target);
         req.set(http::field::host, ip);
         req.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
 
         // Send the HTTP request to the remote host
-        http::write(stream, req);
+        http::write(sock/*stream*/, req);
 
         // This buffer is used for reading and must be persisted
         beast::flat_buffer buffer;
@@ -93,22 +110,23 @@ int main(int argc, char** argv)
         http::response<http::dynamic_body> res;
 
         // Receive the HTTP response
-        http::read(stream, buffer, res);
+        http::read(sock/*stream*/, buffer, res);
 
         // Write the message to standard out
         std::cout << res << std::endl;
 
         // Gracefully close the socket
         beast::error_code ec;
-        stream.shutdown(ec);
-        if(ec == net::error::eof)
-        {
-            ec = {};
-        }
-        if (ec)
-        {
-            throw beast::system_error{ec};
-        }
+        sock.shutdown(tcp::socket::shutdown_send, ec);
+        // stream.shutdown(ec);
+        // if(ec == net::error::eof)
+        // {
+        //     ec = {};
+        // }
+        // if (ec)
+        // {
+        //     throw beast::system_error{ec};
+        // }
         // If we get here then the connection is closed gracefully
     }
     catch(std::exception const& e)

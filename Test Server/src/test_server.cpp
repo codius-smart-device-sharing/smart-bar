@@ -11,6 +11,8 @@
 #include <memory>
 #include <string>
 #include <thread>
+#include <regex>
+#include <map>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -18,10 +20,37 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+std::map<std::string, int> quantities;
+
+// Get cup levels
+std::string get_cup_levels()
+{
+  int cup_count = 12;
+  return std::to_string(cup_count);
+}
+
+// Get quantities
+std::string get_quantities(std::string str)
+{
+  std::string delimeter("?");
+  // Get type of liquid from request
+  std::string sub(str.substr(str.find(delimeter) + 1, str.length()));
+  if (sub == str)
+  {
+    return std::string("No type sent.");
+  }
+  // Get quantity level from stored levels for certain type
+  return std::to_string(quantities[sub]);
+}
+
 // HTTP Response for given request
 template<class Body, class Allocator, class Send>
 void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send)
 {
+    std::string target(req.target());
+    std::regex cups("/cups");
+    std::regex quantity("/quantity");
+    std::regex order("/order");
     // Create a bad request response
     auto const bad_request =
     [&req](beast::string_view why)
@@ -35,54 +64,58 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
     };
 
     // Make sure we can handle the method
-    if(req.method() != http::verb::get)
+    if((req.method() != http::verb::get) && (req.method() != http::verb::options))
     {
       return send(bad_request("Unknown HTTP-method"));
     }
-    else if (req.target() == "/")
+
+    // Respond to OPTIONS request
+    if (req.method() == http::verb::options)
     {
-      // Respond to GET request
       http::response<http::string_body> res;
       res.version(11);
       res.result(http::status::ok);
-      res.set(http::field::server, "Pi");
-      res.body() = "Accepted";
+      res.set(http::field::server, "SmartBar");
+      res.set(http::field::access_control_allow_origin, "*");
+      res.set(http::field::access_control_allow_methods, "OPTIONS, GET");
       res.prepare_payload();
       return send(std::move(res));
     }
-    else if (req.target() == "/cups")
-    {
     // Respond to GET request
-      http::response<http::string_body> res;
-      res.version(11);
-      res.result(http::status::ok);
-      res.set(http::field::server, "Pi");
-      res.body() = "Cup Levels";
-      res.prepare_payload();
-      return send(std::move(res));
-    }
-    else if (req.target() == "/quantity")
+    else if (req.method() == http::verb::get)
     {
-    // Respond to GET request
-      http::response<http::string_body> res;
-      res.version(11);
-      res.result(http::status::ok);
-      res.set(http::field::server, "Pi");
-      res.body() = "Quantities";
-      res.prepare_payload();
-      return send(std::move(res));
+      if (std::regex_search(target, cups))
+      {
+        http::response<http::string_body> res;
+        res.version(11);
+        res.result(http::status::ok);
+        res.set(http::field::server, "SmartBar");
+        res.body() = get_cup_levels();
+        res.prepare_payload();
+        return send(std::move(res));
+      }
+      else if (std::regex_search(target, quantity))
+      {
+        http::response<http::string_body> res;
+        res.version(11);
+        res.result(http::status::ok);
+        res.set(http::field::server, "SmartBar");
+        res.body() = get_quantities(target);
+        res.prepare_payload();
+        return send(std::move(res));
+      }
+      else if (std::regex_search(target, order))
+      {
+        http::response<http::string_body> res;
+        res.version(11);
+        res.result(http::status::ok);
+        res.set(http::field::server, "SmartBar");
+        res.body() = "Making Drink...";
+        res.prepare_payload();
+        return send(std::move(res));
+      }
     }
-    else if (req.target() == "/order")
-    {
-    // Respond to GET request
-      http::response<http::string_body> res;
-      res.version(11);
-      res.result(http::status::ok);
-      res.set(http::field::server, "Pi");
-      res.body() = "Making Drink...";
-      res.prepare_payload();
-      return send(std::move(res));
-    }
+
 }
 
 // Failure
@@ -116,31 +149,31 @@ struct send_lambda
 };
 
 // Handle HTTP server connection
-void do_session(tcp::socket& socket, ssl::context& ctx)
+void do_session(tcp::socket& socket/*, ssl::context& ctx*/)
 {
   bool close = false;
   beast::error_code ec;
 
-  ssl::stream<tcp::socket&> stream{socket, ctx};
+  // ssl::stream<tcp::socket&> stream{socket, ctx};
 
-  stream.handshake(ssl::stream_base::server, ec);
-  if (ec)
-  {
-    return fail(ec, "handshake");
-  }
+  // stream.handshake(ssl::stream_base::server, ec);
+  // if (ec)
+  // {
+  //   return fail(ec, "handshake");
+  // }
 
 
   // Buffer to persist across reads
   beast::flat_buffer buffer;
 
   // Lambda to send messages
-  send_lambda<ssl::stream<tcp::socket&>> lambda{stream, close, ec};
+  send_lambda<tcp::socket/*ssl::stream<tcp::socket&>*/> lambda{socket/*stream*/, close, ec};
 
   for(;;)
   {
     // Read a request
     http::request<http::string_body> req;
-    http::read(stream, buffer, req, ec);
+    http::read(socket/*stream*/, buffer, req, ec);
     if (ec == http::error::end_of_stream)
     {
       break;
@@ -169,25 +202,34 @@ void do_session(tcp::socket& socket, ssl::context& ctx)
   }
 
   // Send SSL shutdown
-  stream.shutdown(ec);
-  if (ec)
-  {
-    return fail(ec, "shutdown");
-  }
+  // stream.shutdown(ec);
+  socket.shutdown(tcp::socket::shutdown_send, ec);
+  // if (ec)
+  // {
+  //   return fail(ec, "shutdown");
+  // }
 }
 
 int main(int argc, char* argv[])
 {
+  // Set drink amounts
+  quantities.insert(std::pair<std::string, int>("Whiskey", 60));
+  quantities.insert(std::pair<std::string, int>("Vodka", 60));
+  quantities.insert(std::pair<std::string, int>("Rum", 60));
+  quantities.insert(std::pair<std::string, int>("Coke", 33));
+  quantities.insert(std::pair<std::string, int>("Sprite", 33));
+  quantities.insert(std::pair<std::string, int>("Cranberry", 33));
+
   try
   {
     auto const address = net::ip::make_address_v4("127.0.0.1");
     auto const port = static_cast<unsigned short>(8080);
 
-    net::io_context ioc;
+    net::io_context ioc{1};
 
-    ssl::context ctx(ssl::context::tlsv12);
+    //ssl::context ctx(ssl::context::tlsv12);
 
-    load_server_certificate(ctx);
+    //load_server_certificate(ctx);
 
     // Create Acceptor
     tcp::acceptor acceptor_{ioc, {address, port}};
@@ -201,8 +243,8 @@ int main(int argc, char* argv[])
 
       std::thread{std::bind(
         &do_session, 
-        std::move(socket),
-        std::ref(ctx)
+        std::move(socket)
+        /*,std::ref(ctx)*/
       )}.detach();
     }
   }
