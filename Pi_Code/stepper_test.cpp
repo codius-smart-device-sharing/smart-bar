@@ -1,5 +1,7 @@
 #include "Stepper.h"
 #include "Stepper_5v.h"
+#include <chrono>
+#include <iostream>
 using namespace std;
 
 // stepper pump;
@@ -16,6 +18,7 @@ bool isOpen = false;
 
 int main() 
 {
+	auto start = chrono::system_clock::now();
 	// Init wiringPi
 	wiringPiSetup();
 	pinMode(prime, INPUT);
@@ -34,19 +37,25 @@ int main()
 	delay(10);
 	clamp.move_5v(0, 50);
 
+	int dir = 1;
+
 	// Run
-	while (true)
+	for(int i = 0; i < 1000; i++)
 	{
-		while (digitalRead(prime) == 0)
+		if (digitalRead(prime) == 0)
 		{
-			pump.move(1, 1600);
+			dir = 1;
+		}
+		else
+		{
+			dir = 0;
 		}
 
 		if (digitalRead(dispense) == 0)
 		{
 			if (isDispense)
 			{
-				pump.move(1, 1600);
+				pump.move(dir, 1600);
 				isDispense = false;
 			}
 			else if (!isDispense)
@@ -71,5 +80,8 @@ int main()
 		}
 	}
 
+	auto end = chrono::system_clock::now();
+	chrono::duration<double> elapsed = end - start;
+	cout << "Elapsed Time: " << elapsed.count() << "s\n";
 	return 0;
 }

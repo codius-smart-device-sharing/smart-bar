@@ -13,6 +13,7 @@
 #include <thread>
 #include <regex>
 #include <map>
+#include <mutex>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -20,13 +21,21 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
+std::mutex m;
 std::map<std::string, int> quantities;
+int cup_count = 12;
+auto const address = net::ip::make_address_v4("127.0.0.1");
+auto const port = static_cast<unsigned short>(8080);
+bool makeDrink = false;
+bool orderDone = true;
 
 // Get cup levels
 std::string get_cup_levels()
 {
-  int cup_count = 12;
-  return std::to_string(cup_count);
+  m.lock();
+  std::string cups = std::to_string(cup_count);
+  m.unlock();
+  return cups;
 }
 
 // Get quantities
@@ -112,8 +121,16 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
         res.set(http::field::server, "SmartBar");
         res.body() = "Making Drink...";
         res.prepare_payload();
+        m.lock();
+        makeDrink = true;
+        m.unlock();
         return send(std::move(res));
       }
+      else
+      {
+        return send(bad_request("Unknown Target"));
+      }
+      
     }
 
 }
@@ -210,6 +227,56 @@ void do_session(tcp::socket& socket/*, ssl::context& ctx*/)
   // }
 }
 
+int start_server()
+{
+  try
+  {
+    net::io_context ioc{1};
+
+    //ssl::context ctx(ssl::context::tlsv12);
+
+    //load_server_certificate(ctx);
+
+    // Create Acceptor
+    tcp::acceptor acceptor_{ioc, {address, port}};
+
+    // for(;;)
+    // {
+    //   // Receive new connection
+    //   tcp::socket socket{ioc};
+
+    //   // Block until connection
+    //   acceptor_.accept(socket);
+
+    //   std::thread{std::bind(
+    //     &do_session, 
+    //     std::move(socket)
+    //     /*,std::ref(ctx)*/
+    //   )}.detach();
+    // }
+    tcp::socket socket{ioc};
+    acceptor_.accept(socket);
+    do_session(socket);
+  }
+  catch(const std::exception& e)
+  {
+    std::cerr << e.what() << '\n';
+  }
+}
+
+int make_drink()
+{
+  m.lock();
+  orderDone = false;
+  std::cout << "Making Drink..." << std::endl;
+  std::cout << "Moving Motors..." << std::endl;
+  std::cout << "Delivering Drink..." << std::endl;
+  cup_count--;
+  makeDrink = false;
+  orderDone = true;
+  m.unlock();
+}
+
 int main(int argc, char* argv[])
 {
   // Set drink amounts
@@ -220,37 +287,14 @@ int main(int argc, char* argv[])
   quantities.insert(std::pair<std::string, int>("Sprite", 33));
   quantities.insert(std::pair<std::string, int>("Cranberry", 33));
 
-  try
+  // std::thread server(start_server);
+  // server.join();
+  for(;;)
   {
-    auto const address = net::ip::make_address_v4("127.0.0.1");
-    auto const port = static_cast<unsigned short>(8080);
-
-    net::io_context ioc{1};
-
-    //ssl::context ctx(ssl::context::tlsv12);
-
-    //load_server_certificate(ctx);
-
-    // Create Acceptor
-    tcp::acceptor acceptor_{ioc, {address, port}};
-    for(;;)
+    start_server();
+    if ((makeDrink == true) && (orderDone == true))
     {
-      // Receive new connection
-      tcp::socket socket{ioc};
-
-      // Block until connection
-      acceptor_.accept(socket);
-
-      std::thread{std::bind(
-        &do_session, 
-        std::move(socket)
-        /*,std::ref(ctx)*/
-      )}.detach();
+      std::thread(make_drink).detach();
     }
   }
-  catch(const std::exception& e)
-  {
-    std::cerr << e.what() << '\n';
-  }
-  
 }

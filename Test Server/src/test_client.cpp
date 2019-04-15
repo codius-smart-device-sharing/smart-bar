@@ -113,6 +113,7 @@ int main(int argc, char** argv)
         http::read(sock/*stream*/, buffer, res);
 
         // Write the message to standard out
+        std::cout << "Received response..." << std::endl;
         std::cout << res << std::endl;
 
         // Gracefully close the socket
