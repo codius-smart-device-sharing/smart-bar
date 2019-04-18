@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <wiringPi.h>
-int mix_dir = 2;
-int mix_step = 3;
+int mix_dir = 6;
+int mix_step = 5;
 
 void setup()
 {
@@ -27,9 +27,9 @@ void run()
 	while(true)
 	{
 		digitalWrite(mix_step, HIGH);
-		delayMicroseconds(75);
+		delayMicroseconds(95);
 		digitalWrite(mix_step, LOW);
-		delayMicroseconds(75);
+		delayMicroseconds(95);
 	}
 }
 
