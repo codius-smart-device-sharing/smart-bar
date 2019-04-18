@@ -1,40 +1,17 @@
+#include "Pinout.h"
+#include <stdlib.h>
 #include <stdio.h>
+#include "Stepper.h"
 #include <wiringPi.h>
-int mix_dir = 6;
-int mix_step = 5;
 
-void setup()
+int main(int argc, char* argv[])
 {
-	printf("Settping up Pi for Smart Bar...\n");
-	printf("Initialize wiringPi...\n");
-	wiringPiSetup();
+	printf("Testing X Motor\n");
+	Stepper x("X", DIR_X, STEP_X);
+	x.move(1, 50);
 
-	printf("Setting pin declarations...\n");
-	printf("Mix Pump Direction Pin: %d\n", mix_dir);
-	printf("Mix Pump Step Pin: %d\n", mix_step);
+	printf("Testing Y Motor\n");
+	Stepper y("Y", DIR_Y, STEP_Y);
+	y.move(1, 50);
 
-	pinMode(mix_dir, OUTPUT);
-	pinMode(mix_step, OUTPUT);
-
-	digitalWrite(mix_dir, LOW);
-	digitalWrite(mix_step, LOW);
-}
-
-void run()
-{
-//	int i = 0;
-	digitalWrite(mix_dir, HIGH);
-	while(true)
-	{
-		digitalWrite(mix_step, HIGH);
-		delayMicroseconds(95);
-		digitalWrite(mix_step, LOW);
-		delayMicroseconds(95);
-	}
-}
-
-int main(void)
-{
-	setup();
-	run();
 }
