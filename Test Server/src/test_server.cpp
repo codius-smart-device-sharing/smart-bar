@@ -23,12 +23,64 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
 std::mutex m;
 std::map<std::string, int> quantities;
+std::map<std::string, int> motors;
 int cup_count = 12;
 auto const address = net::ip::make_address_v4("127.0.0.1");
 auto const port = static_cast<unsigned short>(8080);
+// auto const address = net::ip::make_address_v4("10.186.91.134");
+// auto const port = static_cast<unsigned short>(5001);
 bool makeDrink = false;
 bool orderDone = true;
 
+// Make Drink
+void make_drink(std::map<std::string, int> recipe)
+{
+  for(auto &keys : recipe)
+  {
+    switch (motors[keys.first])
+    {
+      case 0:
+        std::cout << "Pouring: " << keys.first << std::endl;
+        std::cout << "Amount: " << keys.second << std::endl;
+        std::cout << "Motor #: 0" << std::endl;
+        break;
+
+      case 1:
+        std::cout << "Pouring: " << keys.first << std::endl;
+        std::cout << "Amount: " << keys.second << std::endl;
+        std::cout << "Motor #: 1" << std::endl;
+        break;
+
+      case 2:
+        std::cout << "Pouring: " << keys.first << std::endl;
+        std::cout << "Amount: " << keys.second << std::endl;
+        std::cout << "Motor #: 2" << std::endl;
+        break;
+
+      case 3:
+        std::cout << "Pouring: " << keys.first << std::endl;
+        std::cout << "Amount: " << keys.second << std::endl;
+        std::cout << "Motor #: 3" << std::endl;
+        break;
+
+      case 4:
+        std::cout << "Pouring: " << keys.first << std::endl;
+        std::cout << "Amount: " << keys.second << std::endl;
+        std::cout << "Motor #: 4" << std::endl;
+        break;
+
+      case 5:
+        std::cout << "Pouring: " << keys.first << std::endl;
+        std::cout << "Amount: " << keys.second << std::endl;
+        std::cout << "Motor #: 5" << std::endl;
+        break;
+    
+      default:
+        break;
+    }
+    // std::cout << keys.first << ":" << keys.second << std::endl;
+  }
+}
 // Get cup levels
 std::string get_cup_levels()
 {
@@ -41,7 +93,7 @@ std::string get_cup_levels()
 // Get quantities
 std::string get_quantities(std::string str)
 {
-  std::string delimeter("?");
+  std::string delimeter("=");
   // Get type of liquid from request
   std::string sub(str.substr(str.find(delimeter) + 1, str.length()));
   if (sub == str)
@@ -49,9 +101,36 @@ std::string get_quantities(std::string str)
     return std::string("No type sent.");
   }
   // Get quantity level from stored levels for certain type
-  return std::to_string(quantities[sub]);
+  m.lock();
+  std::string quantity(std::to_string(quantities[sub]));
+  m.unlock();
+  return quantity;
 }
 
+// parse order into individual ingredients (partially mimics a JSON parser)
+std::map<std::string, int> parse_order(std::string body_)
+{
+  std::regex appos("\"");
+  std::string order(body_.substr(body_.find("ingredients"), body_.length()));
+  // std::cout << order << std::endl;
+  int first_ingredient = order.find("{");
+  int second_ingredient = order.find(",");
+  int end_ingredients = order.find("}");
+  std::string ingredient1(std::regex_replace(order.substr(first_ingredient + 1, second_ingredient - first_ingredient - 1), appos, ""));
+  // std::cout << ingredient1 << std::endl;
+  std::string ingredient2(std::regex_replace(order.substr(second_ingredient + 1, end_ingredients - second_ingredient - 1), appos, ""));
+  // std::cout << ingredient2 << std::endl;
+
+  std::string name1(ingredient1.substr(0, ingredient1.find(":")));
+  std::string amount1(ingredient1.substr(ingredient1.find(":") + 1, ingredient1.length()));
+  std::string name2(ingredient2.substr(0, ingredient2.find(":")));
+  std::string amount2(ingredient2.substr(ingredient2.find(":") + 1, ingredient2.length()));
+
+  std::map<std::string, int> recipe;
+  recipe.insert(std::pair<std::string, int>(name1, std::stoi(amount1)));
+  recipe.insert(std::pair<std::string, int>(name2, std::stoi(amount2)));
+  return recipe;
+}
 // HTTP Response for given request
 template<class Body, class Allocator, class Send>
 void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send)
@@ -73,7 +152,7 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
     };
 
     // Make sure we can handle the method
-    if((req.method() != http::verb::get) && (req.method() != http::verb::options))
+    if((req.method() != http::verb::get) && (req.method() != http::verb::options) && (req.method() != http::verb::post))
     {
       return send(bad_request("Unknown HTTP-method"));
     }
@@ -83,7 +162,7 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
     {
       http::response<http::string_body> res;
       res.version(11);
-      res.result(http::status::ok);
+      res.result(http::status::no_content);
       res.set(http::field::server, "SmartBar");
       res.set(http::field::access_control_allow_origin, "*");
       res.set(http::field::access_control_allow_methods, "OPTIONS, GET");
@@ -105,6 +184,7 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
       }
       else if (std::regex_search(target, quantity))
       {
+        // /quantity?ingredient=...
         http::response<http::string_body> res;
         res.version(11);
         res.result(http::status::ok);
@@ -113,7 +193,10 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
         res.prepare_payload();
         return send(std::move(res));
       }
-      else if (std::regex_search(target, order))
+    }
+    else if (req.method() == http::verb::post)
+    {
+      if (std::regex_search(target, order))
       {
         http::response<http::string_body> res;
         res.version(11);
@@ -121,18 +204,17 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
         res.set(http::field::server, "SmartBar");
         res.body() = "Making Drink...";
         res.prepare_payload();
-        m.lock();
-        makeDrink = true;
-        m.unlock();
+        std::map<std::string, int> recipe(parse_order(req.body()));
+        std::thread ordering(std::bind(&make_drink, recipe));
+        ordering.join();
+        // make_drink(recipe);
         return send(std::move(res));
       }
-      else
-      {
-        return send(bad_request("Unknown Target"));
-      }
-      
     }
-
+    else
+    {
+      return send(bad_request("Unknown Target"));
+    }
 }
 
 // Failure
@@ -240,41 +322,28 @@ int start_server()
     // Create Acceptor
     tcp::acceptor acceptor_{ioc, {address, port}};
 
-    // for(;;)
-    // {
-    //   // Receive new connection
-    //   tcp::socket socket{ioc};
+    for(;;)
+    {
+      // Receive new connection
+      tcp::socket socket{ioc};
 
-    //   // Block until connection
-    //   acceptor_.accept(socket);
+      // Block until connection
+      acceptor_.accept(socket);
 
-    //   std::thread{std::bind(
-    //     &do_session, 
-    //     std::move(socket)
-    //     /*,std::ref(ctx)*/
-    //   )}.detach();
-    // }
-    tcp::socket socket{ioc};
-    acceptor_.accept(socket);
-    do_session(socket);
+      std::thread{std::bind(
+        &do_session, 
+        std::move(socket)
+        /*,std::ref(ctx)*/
+      )}.detach();
+    }
+    // tcp::socket socket{ioc};
+    // acceptor_.accept(socket);
+    // do_session(socket);
   }
   catch(const std::exception& e)
   {
     std::cerr << e.what() << '\n';
   }
-}
-
-int make_drink()
-{
-  m.lock();
-  orderDone = false;
-  std::cout << "Making Drink..." << std::endl;
-  std::cout << "Moving Motors..." << std::endl;
-  std::cout << "Delivering Drink..." << std::endl;
-  cup_count--;
-  makeDrink = false;
-  orderDone = true;
-  m.unlock();
 }
 
 int main(int argc, char* argv[])
@@ -287,14 +356,21 @@ int main(int argc, char* argv[])
   quantities.insert(std::pair<std::string, int>("Sprite", 33));
   quantities.insert(std::pair<std::string, int>("Cranberry", 33));
 
+  motors.insert(std::pair<std::string, int>("Whiskey", 0));
+  motors.insert(std::pair<std::string, int>("Vodka", 1));
+  motors.insert(std::pair<std::string, int>("Rum", 2));
+  motors.insert(std::pair<std::string, int>("Coke", 3));
+  motors.insert(std::pair<std::string, int>("Sprite", 4));
+  motors.insert(std::pair<std::string, int>("Cranberry", 5));
+  start_server();
   // std::thread server(start_server);
   // server.join();
-  for(;;)
-  {
-    start_server();
-    if ((makeDrink == true) && (orderDone == true))
-    {
-      std::thread(make_drink).detach();
-    }
-  }
+  // for(;;)
+  // {
+  //   start_server();
+  //   if ((makeDrink == true) && (orderDone == true))
+  //   {
+  //     std::thread(make_drink).detach();
+  //   }
+  // }
 }

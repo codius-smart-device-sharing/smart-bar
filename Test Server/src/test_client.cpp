@@ -91,6 +91,14 @@ int main(int argc, char** argv)
             std::cout << "Sending OPTIONS request\n" << std::endl;
             req.method(http::verb::options);
         }
+        else if (method == "POST")
+        {
+            std::cout << "Sending POST request\n" << std::endl;
+            req.method(http::verb::post);
+            std::string body_("{\"method\":\"POST\",\"headers\":{\"Content-Type\":\"application/json\"},\"body\":{\"ingredients\":{\"Whiskey\":1,\"Coke\":1}}}");
+            req.body() = body_;
+            req.prepare_payload();
+        }
         else
         {
             std::cout << "Something went wrong" << std::endl;

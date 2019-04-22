@@ -27,13 +27,13 @@ int ROT_STOP = 24;
 int CLAMP_STOP = 25;
 
 // 5V Cup Ejector Pins from Pi to Motor
-int EJECT_1B = 28;
-int EJECT_2B = 29;
-int EJECT_3B = 21;
-int EJECT_4B = 14;
+int EJECT_1 = 28;
+int EJECT_2 = 29;
+int EJECT_3 = 21;
+int EJECT_4 = 14;
 
 // 5V Clamp Pins from Pi to Motor
-int CLAMP_1B = 10;
-int CLAMP_2B = 11;
-int CLAMP_3B = 26;
-int CLAMP_4B = 27;
+int CLAMP_1 = 10;
+int CLAMP_2 = 11;
+int CLAMP_3 = 26;
+int CLAMP_4 = 27;
