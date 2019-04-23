@@ -1,5 +1,5 @@
-#include "server_certificate.hpp"
-
+// #include "server_certificate.hpp"
+#include "SmartBar.h"
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
@@ -14,6 +14,7 @@
 #include <regex>
 #include <map>
 #include <mutex>
+#include <queue>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -21,72 +22,22 @@ namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 
-std::mutex m;
-std::map<std::string, int> quantities;
-std::map<std::string, int> motors;
-int cup_count = 12;
 auto const address = net::ip::make_address_v4("127.0.0.1");
 auto const port = static_cast<unsigned short>(8080);
 // auto const address = net::ip::make_address_v4("10.186.91.134");
 // auto const port = static_cast<unsigned short>(5001);
-bool makeDrink = false;
-bool orderDone = true;
 
-// Make Drink
-void make_drink(std::map<std::string, int> recipe)
-{
-  for(auto &keys : recipe)
-  {
-    switch (motors[keys.first])
-    {
-      case 0:
-        std::cout << "Pouring: " << keys.first << std::endl;
-        std::cout << "Amount: " << keys.second << std::endl;
-        std::cout << "Motor #: 0" << std::endl;
-        break;
+bool waiting = false;
+bool delivering = true;
+std::mutex server_m;
+std::queue<std::map<std::string, int>> orders;
 
-      case 1:
-        std::cout << "Pouring: " << keys.first << std::endl;
-        std::cout << "Amount: " << keys.second << std::endl;
-        std::cout << "Motor #: 1" << std::endl;
-        break;
-
-      case 2:
-        std::cout << "Pouring: " << keys.first << std::endl;
-        std::cout << "Amount: " << keys.second << std::endl;
-        std::cout << "Motor #: 2" << std::endl;
-        break;
-
-      case 3:
-        std::cout << "Pouring: " << keys.first << std::endl;
-        std::cout << "Amount: " << keys.second << std::endl;
-        std::cout << "Motor #: 3" << std::endl;
-        break;
-
-      case 4:
-        std::cout << "Pouring: " << keys.first << std::endl;
-        std::cout << "Amount: " << keys.second << std::endl;
-        std::cout << "Motor #: 4" << std::endl;
-        break;
-
-      case 5:
-        std::cout << "Pouring: " << keys.first << std::endl;
-        std::cout << "Amount: " << keys.second << std::endl;
-        std::cout << "Motor #: 5" << std::endl;
-        break;
-    
-      default:
-        break;
-    }
-    // std::cout << keys.first << ":" << keys.second << std::endl;
-  }
-}
 // Get cup levels
 std::string get_cup_levels()
 {
-  m.lock();
-  std::string cups = std::to_string(cup_count);
-  m.unlock();
+  Bar::m.lock();
+  std::string cups = std::to_string(Bar::cup_count);
+  Bar::m.unlock();
   return cups;
 }
 
@@ -101,9 +52,9 @@ std::string get_quantities(std::string str)
     return std::string("No type sent.");
   }
   // Get quantity level from stored levels for certain type
-  m.lock();
-  std::string quantity(std::to_string(quantities[sub]));
-  m.unlock();
+  Bar::m.lock();
+  std::string quantity(std::to_string(Bar::quantities[sub]));
+  Bar::m.unlock();
   return quantity;
 }
 
@@ -131,6 +82,7 @@ std::map<std::string, int> parse_order(std::string body_)
   recipe.insert(std::pair<std::string, int>(name2, std::stoi(amount2)));
   return recipe;
 }
+
 // HTTP Response for given request
 template<class Body, class Allocator, class Send>
 void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Send&& send)
@@ -205,9 +157,11 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
         res.body() = "Making Drink...";
         res.prepare_payload();
         std::map<std::string, int> recipe(parse_order(req.body()));
-        std::thread ordering(std::bind(&make_drink, recipe));
-        ordering.join();
-        // make_drink(recipe);
+
+        server_m.lock();
+        orders.push(recipe);
+        server_m.unlock();
+
         return send(std::move(res));
       }
     }
@@ -309,6 +263,7 @@ void do_session(tcp::socket& socket/*, ssl::context& ctx*/)
   // }
 }
 
+// Start the server
 int start_server()
 {
   try
@@ -346,31 +301,33 @@ int start_server()
   }
 }
 
+void order_drinks()
+{
+  std::map<std::string, int> order;
+  bool canMake = false;
+
+  while (true)
+  {
+    // make a drink
+    // get an order from queue
+    server_m.lock();
+    if (!orders.empty())
+    {
+      order = orders.pop();
+      canMake = true;
+    }
+    server_m.unlock();
+
+    if (canMake)
+    {
+      Bar::make_drink(order);
+      canMake = false;
+    }
+  }
+}
+
 int main(int argc, char* argv[])
 {
-  // Set drink amounts
-  quantities.insert(std::pair<std::string, int>("Whiskey", 60));
-  quantities.insert(std::pair<std::string, int>("Vodka", 60));
-  quantities.insert(std::pair<std::string, int>("Rum", 60));
-  quantities.insert(std::pair<std::string, int>("Coke", 33));
-  quantities.insert(std::pair<std::string, int>("Sprite", 33));
-  quantities.insert(std::pair<std::string, int>("Cranberry", 33));
-
-  motors.insert(std::pair<std::string, int>("Whiskey", 0));
-  motors.insert(std::pair<std::string, int>("Vodka", 1));
-  motors.insert(std::pair<std::string, int>("Rum", 2));
-  motors.insert(std::pair<std::string, int>("Coke", 3));
-  motors.insert(std::pair<std::string, int>("Sprite", 4));
-  motors.insert(std::pair<std::string, int>("Cranberry", 5));
+  std::thread ordering(&order_drinks);
   start_server();
-  // std::thread server(start_server);
-  // server.join();
-  // for(;;)
-  // {
-  //   start_server();
-  //   if ((makeDrink == true) && (orderDone == true))
-  //   {
-  //     std::thread(make_drink).detach();
-  //   }
-  // }
 }
