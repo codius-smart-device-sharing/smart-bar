@@ -4,6 +4,7 @@ int STEP_X = 5;
 int DIR_Y = 4;
 int STEP_Y = 1;
 
+
 // These choose the correct pump through the GAL shift register
 // Connects to GAL IN1 pin to send step signal through to A4988
                     //         _____
@@ -37,3 +38,9 @@ int CLAMP_1 = 10;
 int CLAMP_2 = 11;
 int CLAMP_3 = 26;
 int CLAMP_4 = 27;
+
+// 5V Rotation Pins from Pi to Motor
+int ROT_1 = 15;
+int ROT_2 = 16;
+int ROT_3 = 3;
+int ROT_4 = 13;
