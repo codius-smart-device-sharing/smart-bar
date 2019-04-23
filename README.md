@@ -1,1 +1,1 @@
-# Microncontroller Code for Automated Smart Bar
+# Microcontroller Code for Automated Smart Bar
