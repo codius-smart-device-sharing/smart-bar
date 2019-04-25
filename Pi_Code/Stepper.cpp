@@ -10,7 +10,7 @@ void Stepper::setup()
     digitalWrite(this->step_pin, LOW);
 }
 
-void Stepper::move(int direction, int rotations)
+void Stepper::move(int direction, int rotations, int delay)
 {
     if (direction)
     {
@@ -24,14 +24,15 @@ void Stepper::move(int direction, int rotations)
     for(int i = 0; i < rotations; i++)
     {
         digitalWrite(this->step_pin, HIGH);
-        delayMicroseconds(80);
+        delayMicroseconds(delay);
         digitalWrite(this->step_pin, LOW);
-        delayMicroseconds(80);
+        delayMicroseconds(delay);
     }
 }
 
 Stepper::Stepper(string name, int dir_pin, int step_pin)
 {
+    wiringPiSetup();
     this->name = name;
     this->dir_pin = dir_pin;
     this->step_pin = step_pin;

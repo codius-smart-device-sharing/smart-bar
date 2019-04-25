@@ -1,4 +1,4 @@
-#include "root_certificates.hpp"
+// #include "root_certificates.hpp"
 
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
@@ -95,7 +95,8 @@ int main(int argc, char** argv)
         {
             std::cout << "Sending POST request\n" << std::endl;
             req.method(http::verb::post);
-            std::string body_("{\"method\":\"POST\",\"headers\":{\"Content-Type\":\"application/json\"},\"body\":{\"ingredients\":{\"Whiskey\":1,\"Coke\":1}}}");
+            std::string body_("{\"method\":\"POST\",\"headers\":{\"Content-Type\":\"application/json\"},\"body\":{\"ingredients\":{\"Whiskey\":1,\"Coke\":1},\"destination\":\"1\"}}");
+            //std::string body_("{\"method\":\"POST\",\"headers\":{\"Content-Type\":\"application/json\"},\"body\":{\"ingredients\":{\"Whiskey\":1},\"destination\":\"1\"}}");
             req.body() = body_;
             req.prepare_payload();
         }

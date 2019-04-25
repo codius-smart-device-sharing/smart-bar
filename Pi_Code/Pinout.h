@@ -1,5 +1,7 @@
+#pragma once
+
 // direcion and step pins from Pi to A4988
-int DIR_X = 6;
+// int DIR_X = 6;
 int STEP_X = 5;
 int DIR_Y = 4;
 int STEP_Y = 1;

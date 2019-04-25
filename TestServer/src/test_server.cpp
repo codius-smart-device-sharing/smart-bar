@@ -1,36 +1,40 @@
 // #include "server_certificate.hpp"
 #include "SmartBar.h"
-#include <boost/beast/core.hpp>
-#include <boost/beast/http.hpp>
-#include <boost/beast/version.hpp>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl.hpp>
-#include <boost/config.hpp>
-#include <cstdlib>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <thread>
-#include <regex>
-#include <map>
-#include <mutex>
-#include <queue>
+#include "include.h"
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
 namespace ssl = boost::asio::ssl;       // from <boost/asio/ssl.hpp>
 using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
+using namespace SmartBar;
 
-auto const address = net::ip::make_address_v4("127.0.0.1");
-auto const port = static_cast<unsigned short>(8080);
-// auto const address = net::ip::make_address_v4("10.186.91.134");
-// auto const port = static_cast<unsigned short>(5001);
+// auto const address = net::ip::make_address_v4("127.0.0.1");
+// auto const port = static_cast<unsigned short>(8080);
+auto const address = net::ip::make_address_v4("10.186.91.134");
+auto const port = static_cast<unsigned short>(5001);
 
 bool waiting = false;
 bool delivering = true;
 std::mutex server_m;
-std::queue<std::map<std::string, int>> orders;
+
+class Order
+{
+  public:
+    std::map<std::string, int> order;
+    int destination;
+    Order()
+    {
+
+    }
+    Order(std::map<std::string, int> order, int destination) 
+    {
+      this->order = order;
+      this->destination = destination;
+    }
+};
+
+std::queue<Order> orders;
 
 // Get cup levels
 std::string get_cup_levels()
@@ -59,28 +63,61 @@ std::string get_quantities(std::string str)
 }
 
 // parse order into individual ingredients (partially mimics a JSON parser)
-std::map<std::string, int> parse_order(std::string body_)
+Order parse_order(std::string body_)
 {
+  Order ord;
   std::regex appos("\"");
-  std::string order(body_.substr(body_.find("ingredients"), body_.length()));
-  // std::cout << order << std::endl;
-  int first_ingredient = order.find("{");
-  int second_ingredient = order.find(",");
-  int end_ingredients = order.find("}");
-  std::string ingredient1(std::regex_replace(order.substr(first_ingredient + 1, second_ingredient - first_ingredient - 1), appos, ""));
-  // std::cout << ingredient1 << std::endl;
-  std::string ingredient2(std::regex_replace(order.substr(second_ingredient + 1, end_ingredients - second_ingredient - 1), appos, ""));
-  // std::cout << ingredient2 << std::endl;
+  std::string order_(std::regex_replace(body_, appos, ""));
+  std::string order(order_.substr(order_.find("ingredients"), order_.length()));
+  std::cout << order << std::endl;
+  int start_1 = order.find("{");
+  int end_1 = order.find("},");
+  std::string ingredients(order.substr(start_1 + 1, end_1 - start_1 - 1));
+  std::cout << ingredients << std::endl;
+  std::string destination_(order.substr(end_1 + 2, order.length() - end_1 + 2));
+  std::regex appos1("}");
+  std::string dest_(std::regex_replace(destination_, appos1, ""));
+  std::cout << dest_ << std::endl;
+  std::string destination(dest_.substr(dest_.find(":") + 1, dest_.length() - dest_.find(":") + 1));
+  std::cout << destination << std::endl;
 
-  std::string name1(ingredient1.substr(0, ingredient1.find(":")));
-  std::string amount1(ingredient1.substr(ingredient1.find(":") + 1, ingredient1.length()));
-  std::string name2(ingredient2.substr(0, ingredient2.find(":")));
-  std::string amount2(ingredient2.substr(ingredient2.find(":") + 1, ingredient2.length()));
+  ord.destination = std::stoi(destination);
 
-  std::map<std::string, int> recipe;
-  recipe.insert(std::pair<std::string, int>(name1, std::stoi(amount1)));
-  recipe.insert(std::pair<std::string, int>(name2, std::stoi(amount2)));
-  return recipe;
+  if (ingredients.find(",") != std::string::npos)
+  {
+    std::string recipe1(ingredients.substr(0, ingredients.find(",")));
+    std::cout << recipe1 << std::endl;
+    std::string id1(recipe1.substr(0, recipe1.find(":")));
+    std::cout << id1 << std::endl;
+    std::string amt1(recipe1.substr(recipe1.find(":") + 1, recipe1.length() - recipe1.find(":") + 1));
+    std::cout << amt1 << std::endl;
+    std::string recipe2(ingredients.substr(ingredients.find(",") + 1, ingredients.length() - ingredients.find(",") + 1));
+    std::cout << recipe2 << std::endl;
+    std::string id2(recipe2.substr(0, recipe2.find(":")));
+    std::cout << id2 << std::endl;
+    std::string amt2(recipe2.substr(recipe2.find(":") + 1, recipe2.length() - recipe2.find(":") + 1));
+    std::cout << amt2 << std::endl;
+
+    std::map<std::string, int> recipe;
+    recipe.insert(std::pair<std::string, int>(id1, std::stoi(amt1)));
+    recipe.insert(std::pair<std::string, int>(id2, std::stoi(amt2)));
+
+    ord.order = recipe;
+  }
+  else
+  {
+    std::string id(ingredients.substr(0, ingredients.find(":")));
+    std::cout << id << std::endl;
+    std::string amt(ingredients.substr(ingredients.find(":") + 1, ingredients.length() - ingredients.find(":") + 1));
+    std::cout << amt << std::endl;
+
+    std::map<std::string, int> recipe;
+    recipe.insert(std::pair<std::string, int>(id, std::stoi(amt)));
+
+    ord.order = recipe;
+  }
+
+  return ord;
 }
 
 // HTTP Response for given request
@@ -130,7 +167,7 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
         res.version(11);
         res.result(http::status::ok);
         res.set(http::field::server, "SmartBar");
-        res.body() = get_cup_levels();
+        // res.body() = get_cup_levels();
         res.prepare_payload();
         return send(std::move(res));
       }
@@ -141,7 +178,7 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
         res.version(11);
         res.result(http::status::ok);
         res.set(http::field::server, "SmartBar");
-        res.body() = get_quantities(target);
+        // res.body() = get_quantities(target);
         res.prepare_payload();
         return send(std::move(res));
       }
@@ -156,10 +193,10 @@ void handle_request(http::request<Body, http::basic_fields<Allocator>>&& req, Se
         res.set(http::field::server, "SmartBar");
         res.body() = "Making Drink...";
         res.prepare_payload();
-        std::map<std::string, int> recipe(parse_order(req.body()));
+        Order order = parse_order(req.body());
 
         server_m.lock();
-        orders.push(recipe);
+        orders.push(order);
         server_m.unlock();
 
         return send(std::move(res));
@@ -303,7 +340,7 @@ int start_server()
 
 void order_drinks()
 {
-  std::map<std::string, int> order;
+  Order od;
   bool canMake = false;
 
   while (true)
@@ -313,14 +350,15 @@ void order_drinks()
     server_m.lock();
     if (!orders.empty())
     {
-      order = orders.pop();
+      od = orders.front();
+      orders.pop();
       canMake = true;
     }
     server_m.unlock();
 
     if (canMake)
     {
-      Bar::make_drink(order);
+      Bar::make_drink(od.order, od.destination);
       canMake = false;
     }
   }

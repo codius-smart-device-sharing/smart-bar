@@ -1,17 +1,13 @@
 #pragma once
-
-#include "Pinout.h"
+#include "wiringPi.h"
 #include "Stepper.h"
 #include "Stepper_5v.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 #include <iostream>
-#include <string>
 #include <map>
 #include <mutex>
-
-#include <wiringPi.h>
 
 namespace SmartBar
 {
@@ -36,32 +32,27 @@ namespace SmartBar
         public:
             static std::mutex m;
             static int cup_count;
-            static std::map<std::string, int> quantities;
-            static void activate_pump(int pump_num);
+            static void activate_pump(int pump_num, int amount);
             static void eject_cup();
             static void make_drink(std::map<std::string, int> recipe);
             static void init_bar();
-
-        private:
-            std::map<std::string, int> motors;
-            Stepper_5v eject;
+            static std::map<std::string, int> quantities;
+            static std::map<std::string, int> motors;
+            static Stepper_5v eject;
     };
 
     class Delivery
     {
         public:
-            static void move_motor(std::string motor, std::string dir);
+            static void move_motor(std::string motor, std::string dir, int destination);
             static void home();
-            static void deliver(/*destination*/);
-            static void init_delivery();
+            static void deliver(int destination);
 
         private:
-            Stepper x;
-            Stepper y;
-            Stepper_5v clamp;
-            Stepper_5v rotate;
-            bool clamp_open;
+            static Stepper x;
+            static Stepper y;
+            static Stepper_5v clamp;
+            static Stepper_5v rotate;
+            static bool clamp_open;
     };
-
-    static void initialize();
 }
